@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة الكتيبة</title>
+    <style>
+        /* --- General Styles & Reset --- */
+        :root {
+            --primary-color: #2c3e50; /* Dark Slate Blue */
+            --secondary-color: #34495e; /* Wet Asphalt */
+            --background-color: #ecf0f1; /* Clouds */
+            --text-color: #2c3e50;
+            --header-bg: #2c3e50;
+            --header-text: #ecf0f1;
+            --sidebar-bg: #34495e;
+            --sidebar-text: #ecf0f1;
+            --sidebar-hover-bg: #46627f;
+            --button-bg: #27ae60; /* Nephritis */
+            --button-hover-bg: #2ecc71; /* Emerald */
+            --danger-button-bg: #c0392b; /* Pomegranate */
+            --danger-button-hover-bg: #e74c3c; /* Alizarin */
+            --input-border: #bdc3c7; /* Silver */
+            --card-bg: #ffffff;
+            --font-size: 16px;
+        }
+
+        .dark-mode {
+            --primary-color: #bdc3c7;
+            --secondary-color: #34495e;
+            --background-color: #2c3e50;
+            --text-color: #ecf0f1;
+            --header-bg: #34495e;
+            --header-text: #ecf0f1;
+            --sidebar-bg: #2c3e50;
+            --sidebar-text: #ecf0f1;
+            --sidebar-hover-bg: #4a627a;
+            --button-bg: #27ae60;
+            --button-hover-bg: #2ecc71;
+            --danger-button-bg: #e74c3c;
+            --danger-button-hover-bg: #c0392b;
+            --input-border: #7f8c8d; /* Asbestos */
+            --card-bg: #34495e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tahoma', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-size: var(--font-size);
+            transition: background-color 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+
+        /* --- Main Layout --- */
+        .app-container {
+            display: flex;
+            transition: margin-right 0.3s ease;
+        }
+
+        #main-content {
+            flex-grow: 1;
+            padding: 20px;
+            transition: margin-right 0.3s;
+            margin-right: 250px; /* Same as sidebar width */
+            padding-top: 80px; /* Space for fixed header */
+        }
+
+        .sidebar.closed + #main-content {
+            margin-right: 0;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            right: 0;
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            padding-top: 60px; /* Space for header */
+            transition: right 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar.closed {
+            right: -250px;
+        }
+
+        .sidebar-header {
+            padding: 15px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-bottom: 1px solid #4a627a;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: var(--sidebar-text);
+            text-decoration: none;
+            transition: background-color 0.3s;
+            border-bottom: 1px solid #4a627a;
+        }
+
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: var(--sidebar-hover-bg);
+        }
+
+        .sidebar-submenu {
+            list-style: none;
+            padding-right: 20px;
+            background-color: rgba(0,0,0,0.2);
+            display: none; /* Hidden by default */
+        }
+        
+        .sidebar-submenu.open {
+            display: block;
+        }
+
+        .sidebar-submenu a {
+            font-size: 0.9em;
+            padding: 10px 15px;
+            border: none;
+        }
+
+        /* --- Header --- */
+        .header {
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1001;
+        }
+
+        .header-title {
+            font-size: 1.5em;
+        }
+        
+        #menu-toggle {
+            background: none;
+            border: none;
+            color: var(--header-text);
+            font-size: 2em;
+            cursor: pointer;
+        }
+
+        /* --- General UI Components --- */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--button-bg);
+            color: #fff !important;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            text-align: center;
+            text-decoration: none;
+            transition: background-color 0.3s;
+            margin: 5px;
+            width: auto; /* Default width */
+        }
+
+        .btn-large {
+             width: 100%;
+             padding: 15px;
+             margin-bottom: 10px;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-button-bg);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn:hover {
+            background-color: var(--button-hover-bg);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-button-hover-bg);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--sidebar-hover-bg);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 5px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-size: 1em;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(44, 62, 80, 0.5);
+        }
+        
+        select.form-control {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: left 0.75rem center;
+            background-size: 16px 12px;
+            padding-right: 1rem;
+        }
+        
+        .dark-mode select.form-control {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ecf0f1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+        }
+
+        .search-bar {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        .search-bar input {
+            flex-grow: 1;
+            margin-left: 10px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: right;
+            border-bottom: 1px solid var(--input-border);
+        }
+
+        thead th {
+            background-color: var(--secondary-color);
+            color: var(--sidebar-text);
+            font-weight: bold;
+        }
+
+        tbody tr:hover {
+            background-color: rgba(52, 73, 94, 0.2);
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 2000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.6);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 5% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; 
+            max-width: 700px;
+            border-radius: 10px;
+            animation: slideIn 0.4s;
+        }
+
+        @keyframes slideIn {
+             from {transform: translateY(-50px); opacity: 0;}
+             to {transform: translateY(0); opacity: 1;}
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--input-border);
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 1.5em;
+            color: var(--primary-color);
+        }
+
+        .close-btn {
+            color: var(--danger-button-bg);
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close-btn:hover, .close-btn:focus {
+            color: var(--danger-button-hover-bg);
+            text-decoration: none;
+        }
+
+        /* --- Utility Classes --- */
+        .text-center { text-align: center; }
+        .mt-2 { margin-top: 2rem; }
+        .mb-2 { margin-bottom: 2rem; }
+        .hidden { display: none; }
+        
+        /* --- Print Specific Styles --- */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-area, .print-area * {
+                visibility: visible;
+            }
+            .print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background-color: #fff !important;
+                color: #000 !important;
+                font-size: 12pt;
+                direction: rtl;
+            }
+            .card {
+                box-shadow: none;
+                border: 1px solid #000;
+                padding: 10px;
+                background-color: #fff !important;
+                color: #000 !important;
+            }
+            .card-header {
+                color: #000 !important;
+                border-bottom: 2px solid #000;
+            }
+            .btn { display: none; }
+            table { font-size: 10pt; color: #000 !important; }
+            th, td { border-bottom: 1px solid #000; color: #000 !important; }
+            thead th {
+                background-color: #ccc !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact; 
+                color-adjust: exact;
+            }
+            .header, .sidebar { display: none; }
+            #main-content { margin-right: 0 !important; padding: 0; padding-top: 0 !important; }
+            .page.active { display: block; }
+            .permit-body .fill-in {
+                color: #000 !important;
+                border-bottom: 1px dotted #000 !important;
+            }
+            .signature-pad-container { border: 1px solid #000 !important; }
+        }
+        
+        /* --- Specific Page Styles --- */
+        
+        /* Home Page Dashboard */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .stat-card {
+            background-color: var(--secondary-color);
+            color: var(--sidebar-text);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-card h3 { margin-bottom: 10px; font-size: 1.2em; }
+        .stat-card .stat-number { font-size: 2.5em; font-weight: bold; }
+
+        /* Personnel List */
+        .personnel-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .personnel-card {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid var(--input-border);
+        }
+        .personnel-card:last-child { border-bottom: none; }
+        .personnel-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-left: 15px;
+            border: 2px solid var(--secondary-color);
+            background-color: var(--background-color);
+        }
+        .personnel-info { flex-grow: 1; }
+        .personnel-info h4 { margin: 0; font-size: 1.1em; }
+        .personnel-info p { margin: 2px 0; color: #7f8c8d; }
+        .dark-mode .personnel-info p { color: #bdc3c7; }
+        .personnel-card-actions .btn { padding: 5px 10px; font-size: 0.8em; margin: 2px; }
+        
+        /* Attendance Page */
+        .attendance-table td { text-align: center; vertical-align: middle; }
+        .attendance-table .personnel-name { text-align: right; font-weight: bold; }
+        .status-select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid var(--input-border);
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            min-width: 120px;
+        }
+        .status-select-حاضر { background-color: rgba(39, 174, 96, 0.1); }
+        .status-select-غائب { background-color: rgba(192, 57, 43, 0.1); }
+        .status-select-مريض { background-color: rgba(241, 196, 15, 0.1); }
+        .status-select-راحة { background-color: rgba(52, 152, 219, 0.1); }
+        .status-select-مهمة { background-color: rgba(155, 89, 182, 0.1); }
+        .status-select-إجازة { background-color: rgba(230, 126, 34, 0.1); }
+        
+        /* Permit Page & Signature Pad */
+        .permit-container {
+            border: 2px solid var(--text-color);
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 800px;
+            background-color: var(--card-bg);
+        }
+        .permit-header { text-align: center; margin-bottom: 30px; }
+        .permit-header h2 { margin: 0; font-size: 1.8em; }
+        .permit-header h3 { margin: 5px 0; font-size: 1.4em; }
+        .permit-body { line-height: 2.2; font-size: 1.2em; }
+        .permit-body .fill-in {
+            font-weight: bold;
+            display: inline-block;
+            min-width: 80px;
+            border-bottom: 1px dotted var(--text-color);
+            padding: 0 5px;
+            text-align: center;
+        }
+        .permit-footer { margin-top: 40px; display: flex; justify-content: space-around; text-align: center; }
+        .signature-block { display: flex; flex-direction: column; align-items: center; }
+        .signature-block strong { margin-bottom: 10px; cursor: text; }
+        .signature-pad-container {
+            width: 250px;
+            height: 120px;
+            border: 2px dashed var(--input-border);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: crosshair;
+        }
+        .signature-canvas { width: 100%; height: 100%; }
+        .btn-clear-signature {
+            padding: 5px 10px;
+            font-size: 0.8em;
+            background-color: var(--danger-button-bg);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-clear-signature:hover { background-color: var(--danger-button-hover-bg); }
+        
+        /* Settings Page */
+        .settings-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--input-border);
+        }
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 26px; width: 26px;
+            left: 4px; bottom: 4px; background-color: white;
+            transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--button-bg); }
+        input:checked + .slider:before { transform: translateX(26px); }
+        
+        /* Toast Notification */
+        #toast {
+            visibility: hidden; min-width: 250px; background-color: var(--primary-color);
+            color: #fff; text-align: center; border-radius: 5px; padding: 16px;
+            position: fixed; z-index: 3000; left: 50%; transform: translateX(-50%);
+            bottom: 30px; font-size: 17px;
+        }
+        #toast.show {
+            visibility: visible;
+            animation: toast-fadein 0.5s, toast-fadeout 0.5s 2.5s;
+        }
+        @keyframes toast-fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes toast-fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                نظام إدارة الكتيبة
+                <br>
+                <small style="font-weight:normal;">تصميم: إبراهيم</small>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="#home" class="nav-link active">🏠 الرئيسية</a></li>
+                <li><a href="#personnel" id="personnel-menu-toggle" class="nav-link">🧑‍✈️ أفراد الكتيبة</a></li>
+                <ul class="sidebar-submenu" id="personnel-submenu">
+                   <li><a href="#all-personnel" class="nav-link" data-company="all">عرض الكل</a></li>
+                </ul>
+                <li><a href="#attendance" class="nav-link">⏱️ الحضور والغياب</a></li>
+                <li><a href="#permits" class="nav-link">🎫 التصاريح</a></li>
+                <li><a href="#reports" class="nav-link">📋 التقارير</a></li>
+                <li><a href="#notepad" class="nav-link">📝 مدونة يدوية</a></li>
+                <li><a href="#settings" class="nav-link">⚙️ الإعدادات</a></li>
+            </ul>
+        </aside>
+
+        <main id="main-content">
+            <header class="header no-print">
+                <button id="menu-toggle">☰</button>
+                <h1 id="page-title" class="header-title">الرئيسية</h1>
+                <div class="header-actions"></div>
+            </header>
+
+            <!-- ======================= HOME PAGE ======================= -->
+            <div id="home" class="page active">
+                <div class="card">
+                    <div class="card-header">لوحة المعلومات</div>
+                    <div class="dashboard-grid">
+                        <div class="stat-card">
+                            <h3>إجمالي الأفراد</h3>
+                            <p class="stat-number" id="total-personnel-stat">0</p>
+                        </div>
+                        <div class="stat-card" style="background-color: #27ae60;">
+                            <h3>الحاضرون اليوم</h3>
+                            <p class="stat-number" id="present-stat">0</p>
+                        </div>
+                        <div class="stat-card" style="background-color: #c0392b;">
+                            <h3>الغياب اليوم</h3>
+                            <p class="stat-number" id="absent-stat">0</p>
+                        </div>
+                        <div class="stat-card" style="background-color: #f39c12;">
+                            <h3>حالات أخرى</h3>
+                            <p class="stat-number" id="other-stat">0</p>
+                        </div>
+                    </div>
+                </div>
+                 <div class="card">
+                    <div class="card-header">وصول سريع</div>
+                     <button class="btn btn-large" onclick="app.navigateTo('add-personnel-page')">إضافة فرد جديد</button>
+                     <button class="btn btn-large btn-secondary" onclick="app.navigateTo('attendance')">تسجيل الحضور اليومي</button>
+                     <button class="btn btn-large" onclick="app.navigateTo('permits')">إنشاء تصريح جديد</button>
+                </div>
+            </div>
+
+            <!-- ======================= PERSONNEL PAGE ======================= -->
+            <div id="all-personnel" class="page">
+                <div class="personnel-actions card no-print">
+                    <div>
+                        <h2 id="personnel-list-title">قائمة الأفراد</h2>
+                    </div>
+                    <button class="btn" onclick="app.showPersonnelModal()">إضافة فرد جديد</button>
+                </div>
+                <div class="card no-print">
+                     <div class="search-bar">
+                        <input type="text" id="searchInput" class="form-control" placeholder="ابحث بالاسم أو الرقم العسكري...">
+                        <button class="btn btn-secondary" onclick="app.filterPersonnel()">بحث</button>
+                     </div>
+                </div>
+                <div id="personnel-list-container">
+                    <p class="text-center card">لا يوجد أفراد لعرضهم. ابدأ بإضافة فرد جديد.</p>
+                </div>
+            </div>
+
+            <!-- ======================= ATTENDANCE PAGE ======================= -->
+            <div id="attendance" class="page">
+                 <div class="card">
+                    <div class="card-header">تسجيل الحضور والغياب اليومي</div>
+                    <div class="form-group">
+                        <label for="attendance-date">التاريخ:</label>
+                        <input type="date" id="attendance-date" class="form-control" onchange="app.renderAttendanceTable()">
+                    </div>
+                    <div class="form-group">
+                        <label for="attendance-company-filter">فرز حسب السرية:</label>
+                        <select id="attendance-company-filter" class="form-control" onchange="app.renderAttendanceTable()">
+                            <option value="all">كل الكتيبة</option>
+                        </select>
+                    </div>
+                    <div class="table-container">
+                        <table class="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>الاسم</th>
+                                    <th>الحالة</th>
+                                    <th>ملاحظات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendance-list">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-2 text-center no-print">
+                        <button class="btn" onclick="app.saveAttendance()">حفظ الحضور</button>
+                        <button class="btn btn-secondary" onclick="app.generateDailyReportFromAttendance()">إنشاء تقرير اليومية</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================= PERMITS PAGE ======================= -->
+            <div id="permits" class="page">
+                 <div class="card no-print">
+                    <div class="card-header">نظام التصاريح</div>
+                    <div class="form-group">
+                         <label for="permit-type">اختر نوع التصريح:</label>
+                         <select id="permit-type" class="form-control" onchange="app.generatePermitTemplate()">
+                            <option value="">-- اختر --</option>
+                            <option value="raha">تصريح راحة</option>
+                            <option value="mabeet">تصريح مبيت</option>
+                            <option value="mohema">تصريح مهمة رسمية</option>
+                            <option value="khurooj">تصريح خروج</option>
+                            <option value="maradhi">إجازة مرضية</option>
+                         </select>
+                    </div>
+                     <div class="form-group">
+                         <label for="permit-personnel-select">اختر الفرد (لتعبئة البيانات تلقائياً):</label>
+                         <select id="permit-personnel-select" class="form-control" onchange="app.fillPermitWithPersonnelData()">
+                             <option value="">-- اختر فرد --</option>
+                         </select>
+                     </div>
+                 </div>
+
+                <div id="permit-display-area" class="print-area">
+                    <p class="text-center">اختر نوع التصريح من الأعلى لعرض النموذج هنا.</p>
+                </div>
+                
+                <div id="permit-actions" class="text-center mt-2 no-print hidden">
+                    <button class="btn" onclick="window.print()">طباعة</button>
+                    <button class="btn btn-secondary" onclick="app.shareElementAsImage('permit-display-area', 'تصريح', 'تصريح جاهز للمشاركة')">مشاركة</button>
+                    <button class="btn btn-danger" onclick="app.clearPermit()">مسح التصريح</button>
+                </div>
+            </div>
+
+            <!-- ======================= REPORTS PAGE ======================= -->
+            <div id="reports" class="page">
+                 <div class="card no-print">
+                    <div class="card-header">التقارير والإحصائيات</div>
+                    <p>هنا يمكنك عرض التقارير التلقائية عن حالة الكتيبة والسرايا.</p>
+                     <div class="mt-2">
+                        <button class="btn btn-large" onclick="app.generateDailyReport()">إنشاء تقرير اليومية</button>
+                     </div>
+                </div>
+                <div id="report-display-area" class="card print-area">
+                    <p class="text-center">اضغط على زر "إنشاء تقرير" لعرض التقرير هنا.</p>
+                </div>
+                <div id="report-actions" class="text-center mt-2 no-print hidden">
+                     <button class="btn" onclick="window.print()">طباعة التقرير</button>
+                    <button class="btn btn-secondary" onclick="app.shareElementAsImage('report-display-area', 'تقرير_الكتيبة', 'تقرير الكتيبة اليومي')">مشاركة</button>
+                </div>
+            </div>
+            
+            <!-- ======================= NOTEPAD PAGE ======================= -->
+            <div id="notepad" class="page">
+                <div class="card">
+                    <div class="card-header">مدونة يدوية</div>
+                     <p>مكان لحفظ الملاحظات السريعة، النصوص الجاهزة، أو أي معلومات تحتاجها بشكل متكرر. البيانات تحفظ تلقائياً.</p>
+                    <textarea id="notepad-area" class="form-control" rows="20" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+                     <div class="text-center mt-2">
+                         <button class="btn" onclick="app.copyNotepad()">نسخ الكل</button>
+                         <button class="btn btn-danger" onclick="app.clearNotepad()">مسح الكل</button>
+                     </div>
+                </div>
+            </div>
+
+            <!-- ======================= SETTINGS PAGE ======================= -->
+            <div id="settings" class="page">
+                <div class="card">
+                    <div class="card-header">الإعدادات العامة</div>
+                    
+                    <div class="settings-section">
+                        <span>الوضع الليلي</span>
+                        <label class="switch">
+                          <input type="checkbox" id="darkModeToggle">
+                          <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-section">
+                        <label for="fontSizeSlider">حجم الخط</label>
+                        <input type="range" min="12" max="24" value="16" id="fontSizeSlider">
+                    </div>
+
+                </div>
+
+                <div class="card">
+                    <div class="card-header">إدارة البيانات</div>
+                    <p>إدارة بيانات التطبيق المحفوظة على جهازك. بياناتك خاصة بك ولا يتم رفعها على أي خادم.</p>
+                    <div class="mt-2">
+                        <button class="btn" onclick="app.exportData()">تصدير نسخة احتياطية (JSON)</button>
+                        <label for="importFile" class="btn btn-secondary">استيراد نسخة احتياطية</label>
+                        <input type="file" id="importFile" class="hidden" accept=".json">
+                    </div>
+                     <div class="mt-2">
+                        <button class="btn btn-danger" onclick="app.confirmResetData()">مسح جميع البيانات</button>
+                         <p><small>تحذير: هذا الإجراء سيقوم بحذف جميع الأفراد والتقارير والسجلات بشكل نهائي ولا يمكن التراجع عنه.</small></p>
+                    </div>
+                </div>
+                 <div class="card">
+                    <div class="card-header">إدارة السرايا والفصائل</div>
+                     <div class="form-group">
+                         <label for="companyNameInput">اسم السرية/الفصيلة الجديدة:</label>
+                         <input type="text" id="companyNameInput" class="form-control" placeholder="مثال: السرية الأولى، فصيلة الدعم">
+                         <button class="btn mt-2" onclick="app.addCompany()">إضافة سرية/فصيلة</button>
+                     </div>
+                     <div id="company-list-manager">
+                         <h4>السرايا الحالية:</h4>
+                         <ul id="company-management-list">
+                         </ul>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- ======================= MODALS ======================= -->
+            <div id="personnelModal" class="modal no-print">
+                <div class="modal-content">
+                    <div class="modal-header">
+                         <h2 class="modal-title" id="personnelModalTitle">إضافة فرد جديد</h2>
+                        <span class="close-btn" onclick="app.closePersonnelModal()">&times;</span>
+                    </div>
+                    <form id="personnelForm">
+                        <input type="hidden" id="personnelId">
+                        <div class="form-group">
+                            <label for="fullName">الاسم الكامل</label>
+                            <input type="text" id="fullName" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="militaryNumber">الرقم العسكري</label>
+                            <input type="text" id="militaryNumber" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="rank">الرتبة</label>
+                            <input type="text" id="rank" list="rank-list" class="form-control">
+                            <datalist id="rank-list">
+                                <option value="جندي"></option><option value="جندي أول"></option><option value="عريف"></option><option value="وكيل رقيب"></option>
+                                <option value="رقيب"></option><option value="رقيب أول"></option><option value="رئيس رقباء"></option>
+                                <option value="ملازم"></option><option value="ملازم أول"></option><option value="نقيب"></option>
+                                <option value="رائد"></option><option value="مقدم"></option><option value="عقيد"></option><option value="عميد"></option>
+                            </datalist>
+                        </div>
+                         <div class="form-group">
+                            <label for="company">السرية/الفصيلة</label>
+                            <select id="company" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dob">تاريخ الميلاد</label>
+                            <input type="date" id="dob" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="bloodType">فصيلة الدم</label>
+                            <select id="bloodType" class="form-control">
+                                <option value="">غير محدد</option>
+                                <option value="A+">A+</option><option value="A-">A-</option>
+                                <option value="B+">B+</option><option value="B-">B-</option>
+                                <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                                <option value="O+">O+</option><option value="O-">O-</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="weaponName">السلاح</label>
+                            <input type="text" id="weaponName" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="weaponNumber">رقم السلاح</label>
+                            <input type="text" id="weaponNumber" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="phoneNumber">رقم الهاتف</label>
+                            <input type="tel" id="phoneNumber" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="address">السكن</label>
+                            <input type="text" id="address" class="form-control">
+                        </div>
+                         <div class="form-group">
+                            <label for="personnelImage">صورة الفرد (اختياري)</label>
+                            <input type="file" id="personnelImage" class="form-control" accept="image/*">
+                             <small>سيتم حفظ الصورة داخل التطبيق للعمل بدون انترنت.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="notes">ملاحظات</label>
+                            <textarea id="notes" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-large">حفظ البيانات</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div id="viewPersonnelModal" class="modal">
+                 <div class="modal-content print-area" id="personnel-detail-content">
+                     <div class="modal-header no-print">
+                         <h2 class="modal-title">تفاصيل الفرد</h2>
+                        <span class="close-btn" onclick="app.closeViewPersonnelModal()">&times;</span>
+                    </div>
+                    <div id="personnelDetailBody"></div>
+                     <div class="text-center mt-2 no-print">
+                         <button class="btn" onclick="window.print()">طباعة</button>
+                         <button class="btn btn-secondary" onclick="app.shareElementAsImage('personnel-detail-content', 'بيانات_فرد', 'بيانات فرد من نظام الكتيبة')">مشاركة</button>
+                     </div>
+                 </div>
+            </div>
+
+        </main>
+    </div>
+    
+    <div id="toast"></div>
+
+    <!-- مكتبات خارجية -->
+    <script src="html2canvas.min.js"></script>
+    <script src="signature_pad.min.js"></script>
+
+    <script>
+    // =================================================================================
+    //  نظام إدارة الكتيبة - إصدار إبراهيم العالمي 2.0
+    //  تم التطوير بواسطة Gemini AI بناءً على طلب إبراهيم
+    //  الميزات الجديدة: توقيع إلكتروني، مشاركة ذكية، مرونة في التصاريح، وإصلاحات.
+    // =================================================================================
+
+    const app = {
+        db: {},
+        signaturePads: [],
+        elements: {
+            sidebar: document.getElementById('sidebar'),
+            mainContent: document.getElementById('main-content'),
+            menuToggle: document.getElementById('menu-toggle'),
+            pageTitle: document.getElementById('page-title'),
+            navLinks: document.querySelectorAll('.nav-link'),
+            pages: document.querySelectorAll('.page'),
+            personnelModal: document.getElementById('personnelModal'),
+            personnelForm: document.getElementById('personnelForm'),
+            personnelListContainer: document.getElementById('personnel-list-container'),
+            personnelModalTitle: document.getElementById('personnelModalTitle'),
+            personnelSubmenu: document.getElementById('personnel-submenu'),
+            companyNameInput: document.getElementById('companyNameInput'),
+            companyManagementList: document.getElementById('company-management-list'),
+            darkModeToggle: document.getElementById('darkModeToggle'),
+            fontSizeSlider: document.getElementById('fontSizeSlider'),
+            searchInput: document.getElementById('searchInput'),
+            viewPersonnelModal: document.getElementById('viewPersonnelModal'),
+            personnelDetailBody: document.getElementById('personnelDetailBody'),
+            toast: document.getElementById('toast'),
+            notepadArea: document.getElementById('notepad-area'),
+            importFileInput: document.getElementById('importFile'),
+            attendanceDateInput: document.getElementById('attendance-date'),
+            attendanceList: document.getElementById('attendance-list'),
+            attendanceCompanyFilter: document.getElementById('attendance-company-filter'),
+            permitDisplayArea: document.getElementById('permit-display-area'),
+            permitActions: document.getElementById('permit-actions'),
+            reportDisplayArea: document.getElementById('report-display-area'),
+            reportActions: document.getElementById('report-actions'),
+        },
+
+        init() {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.loadData();
+                this.setupEventListeners();
+                this.renderAll();
+                this.applySettings();
+                this.navigateTo(window.location.hash || '#home');
+                console.log('نظام إدارة الكتيبة (إصدار إبراهيم 2.0) جاهز للعمل.');
+            });
+        },
+
+        loadData() {
+            const savedDB = localStorage.getItem('katibaDB');
+            if (savedDB) {
+                this.db = JSON.parse(savedDB);
+                if (typeof this.db.attendance !== 'object' || this.db.attendance === null) this.db.attendance = {};
+            } else {
+                this.db = {
+                    personnel: [],
+                    companies: ['السرية الأولى', 'السرية الثانية', 'سرية القيادة'],
+                    attendance: {},
+                    settings: { darkMode: false, fontSize: 16 },
+                    notepad: 'مرحباً بك في نظام إدارة الكتيبة!\n\nيمكنك استخدام هذه المدونة لكتابة ملاحظات سريعة.'
+                };
+            }
+        },
+
+        saveData() {
+            try {
+                localStorage.setItem('katibaDB', JSON.stringify(this.db));
+            } catch (e) {
+                console.error("خطأ في حفظ البيانات:", e);
+                this.showToast('خطأ: لم يتم حفظ البيانات، قد تكون الذاكرة ممتلئة.');
+            }
+        },
+
+        setupEventListeners() {
+            this.elements.menuToggle.addEventListener('click', () => this.toggleSidebar());
+
+            document.querySelectorAll('.sidebar-menu a').forEach(link => {
+                link.addEventListener('click', (e) => this.handleNavigation(e));
+            });
+            
+            document.getElementById('personnel-menu-toggle').addEventListener('click', (e) => {
+                e.preventDefault();
+                this.elements.personnelSubmenu.classList.toggle('open');
+            });
+
+            this.elements.personnelForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.savePersonnel();
+            });
+
+            this.elements.darkModeToggle.addEventListener('change', () => this.toggleDarkMode());
+            this.elements.fontSizeSlider.addEventListener('input', (e) => this.changeFontSize(e.target.value));
+            this.elements.searchInput.addEventListener('keyup', () => this.filterPersonnel());
+            this.elements.notepadArea.addEventListener('keyup', this.saveNotepad.bind(this));
+            this.elements.importFileInput.addEventListener('change', (e) => this.importData(e));
+        },
+        
+        navigateTo(targetId) {
+            targetId = targetId.startsWith('#') ? targetId.substring(1) : targetId;
+            
+            if (targetId === 'add-personnel-page') {
+                this.showPersonnelModal();
+                return;
+            }
+            
+            const link = document.querySelector(`.nav-link[href="#${targetId}"]`) || document.querySelector(`.nav-link[data-company="${targetId}"]`);
+            if (link) {
+                this.handleNavigation({ target: link, preventDefault: () => {} });
+            } else {
+                this.handleNavigation({ target: document.querySelector('.nav-link[href="#home"]'), preventDefault: () => {} });
+            }
+        },
+
+        handleNavigation(e) {
+            e.preventDefault();
+            const targetEl = e.target.closest('a');
+            if (!targetEl) return;
+            const targetId = targetEl.getAttribute('href')?.substring(1) || 'all-personnel';
+            const companyFilter = targetEl.dataset.company;
+
+            this.elements.pages.forEach(page => page.classList.remove('active'));
+            const targetPage = document.getElementById(targetId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            } else {
+                document.getElementById('home').classList.add('active');
+            }
+
+            document.querySelectorAll('.sidebar-menu a').forEach(link => link.classList.remove('active'));
+            targetEl.classList.add('active');
+
+            this.elements.pageTitle.textContent = targetEl.textContent.trim().replace(/^[^\s]+\s/,'');
+
+            // Logic specific to each page
+            if (targetId === 'all-personnel') this.renderPersonnelList(companyFilter || 'all');
+            if (targetId === 'attendance') {
+                this.elements.attendanceDateInput.valueAsDate = new Date();
+                this.renderAttendanceTable();
+            }
+            if (targetId === 'settings') this.renderCompanyManager();
+            if (targetId === 'home') this.updateDashboardStats();
+            if (targetId === 'reports') {
+                if (!this.elements.reportDisplayArea.querySelector('.card-header')) {
+                    this.elements.reportDisplayArea.innerHTML = `<p class="text-center">اضغط على زر "إنشاء تقرير" لعرض التقرير هنا.</p>`;
+                    this.elements.reportActions.classList.add('hidden');
+                }
+            }
+            if(targetId === 'permits') this.clearPermit();
+            
+            if (window.innerWidth < 768) this.toggleSidebar(true);
+        },
+        
+        toggleSidebar(forceClose = false) {
+            this.elements.sidebar.classList.toggle('closed', forceClose);
+        },
+
+        showToast(message) {
+            this.elements.toast.textContent = message;
+            this.elements.toast.className = "show";
+            setTimeout(() => { this.elements.toast.className = this.elements.toast.className.replace("show", ""); }, 3000);
+        },
+        
+        // --- Personnel Management ---
+        showPersonnelModal(id = null) {
+            this.elements.personnelForm.reset();
+            document.getElementById('personnelId').value = '';
+            document.getElementById('personnelImage').value = '';
+            if (id) {
+                const person = this.db.personnel.find(p => p.id === id);
+                if (person) {
+                    this.elements.personnelModalTitle.textContent = 'تعديل بيانات فرد';
+                    Object.keys(person).forEach(key => {
+                        const el = document.getElementById(key);
+                        if (el) el.value = person[key];
+                    });
+                }
+            } else {
+                this.elements.personnelModalTitle.textContent = 'إضافة فرد جديد';
+            }
+            this.elements.personnelModal.style.display = 'block';
+        },
+
+        closePersonnelModal() { this.elements.personnelModal.style.display = 'none'; },
+
+        async savePersonnel() {
+            const id = document.getElementById('personnelId').value;
+            const imageFile = document.getElementById('personnelImage').files[0];
+            let imageBase64 = null;
+
+            if (imageFile) {
+                try {
+                    imageBase64 = await this.readFileAsBase64(imageFile);
+                } catch (error) {
+                    this.showToast('خطأ في قراءة ملف الصورة.'); return;
+                }
+            }
+
+            const personData = {
+                fullName: document.getElementById('fullName').value.trim(),
+                militaryNumber: document.getElementById('militaryNumber').value.trim(),
+                rank: document.getElementById('rank').value.trim(),
+                company: document.getElementById('company').value,
+                dob: document.getElementById('dob').value,
+                bloodType: document.getElementById('bloodType').value,
+                weaponName: document.getElementById('weaponName').value.trim(),
+                weaponNumber: document.getElementById('weaponNumber').value.trim(),
+                phoneNumber: document.getElementById('phoneNumber').value.trim(),
+                address: document.getElementById('address').value.trim(),
+                notes: document.getElementById('notes').value.trim(),
+            };
+
+            if (!personData.fullName || !personData.militaryNumber) {
+                this.showToast('الاسم والرقم العسكري حقول إجبارية.'); return;
+            }
+
+            if (id) {
+                const index = this.db.personnel.findIndex(p => p.id === id);
+                if (index > -1) {
+                    this.db.personnel[index] = { ...this.db.personnel[index], ...personData };
+                    if (imageBase64) this.db.personnel[index].image = imageBase64;
+                }
+            } else {
+                personData.id = `p_${Date.now()}`;
+                if (imageBase64) personData.image = imageBase64;
+                this.db.personnel.push(personData);
+            }
+
+            this.saveData();
+            this.renderPersonnelList();
+            this.updateSelects();
+            this.updateDashboardStats();
+            this.closePersonnelModal();
+            this.showToast('تم حفظ بيانات الفرد بنجاح.');
+        },
+        
+        readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        },
+
+        deletePersonnel(id) {
+            if (confirm('هل أنت متأكد من رغبتك في حذف هذا الفرد؟ لا يمكن التراجع عن هذا الإجراء.')) {
+                this.db.personnel = this.db.personnel.filter(p => p.id !== id);
+                Object.keys(this.db.attendance).forEach(date => delete this.db.attendance[date][id]);
+                this.saveData();
+                this.renderPersonnelList();
+                this.updateSelects();
+                this.updateDashboardStats();
+                this.showToast('تم حذف الفرد.');
+            }
+        },
+        
+        viewPersonnel(id) {
+            const person = this.db.personnel.find(p => p.id === id);
+            if (!person) return;
+            const defaultImg = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2EwYTBhMCI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MxLjY2IDAgMyAxLjM0IDMgM3MtMS4zNCAzLTMgMy0zLTEuMzQtMy0zIDEuMzQtMyAzLTN6bTAgMTRjLTIuMzMgMC00LjMyLTEuMDYtNS42OC0yLjc4Ljc3LTEuNDggMy4wNS0yLjUyIDUuNjgtMi41MiAxLjI5IDAgMi41Mi4zNCAzLjU2Ljk1LS44NS42Ny0xLjkyIDEuMDUtMy4wNiAxLjM1eiIvPjwvc3ZnPg==';
+            this.elements.personnelDetailBody.innerHTML = `
+                <div style="text-align:center; margin-bottom: 20px;"><h2>بطاقة بيانات فرد</h2></div>
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 20px; border-bottom: 1px solid var(--input-border); padding-bottom: 20px;">
+                    <img src="${person.image || defaultImg}" alt="صورة الفرد" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--secondary-color);">
+                    <div style="flex-grow: 1;">
+                        <h3 style="color: var(--primary-color); margin: 0; font-size: 1.4em;">${person.rank || ''} / ${person.fullName}</h3>
+                        <p><strong>الرقم العسكري:</strong> ${person.militaryNumber}</p>
+                    </div>
+                </div>
+                <table style="width:100%; text-align: right; border-collapse: collapse; margin-top: 15px;">
+                    <tr><td style="padding: 8px; border-bottom: 1px solid var(--input-border);"><strong>السرية/الفصيلة:</strong></td><td style="padding: 8px; border-bottom: 1px solid var(--input-border);">${person.company || 'غير محدد'}</td></tr>
+                    <tr><td style="padding: 8px; border-bottom: 1px solid var(--input-border);"><strong>تاريخ الميلاد:</strong></td><td style="padding: 8px; border-bottom: 1px solid var(--input-border);">${person.dob || 'غير محدد'}</td></tr>
+                    <tr><td style="padding: 8px; border-bottom: 1px solid var(--input-border);"><strong>فصيلة الدم:</strong></td><td style="padding: 8px; border-bottom: 1px solid var(--input-border);">${person.bloodType || 'غير محدد'}</td></tr>
+                    <tr><td style="padding: 8px; border-bottom: 1px solid var(--input-border);"><strong>السلاح:</strong></td><td style="padding: 8px; border-bottom: 1px solid var(--input-border);">${person.weaponName || 'لا يوجد'}</td></tr>
+                    <tr><td style="padding: 8px; border-bottom: 1px solid var(--input-border);"><strong>رقم السلاح:</strong></td><td style="padding: 8px; border-bottom: 1px solid var(--input-border);">${person.weaponNumber || 'لا يوجد'}</td></tr>
+                    <tr><td style="padding: 8px; border-bottom: 1px solid var(--input-border);"><strong>رقم الهاتف:</strong></td><td style="padding: 8px; border-bottom: 1px solid var(--input-border);">${person.phoneNumber || 'لا يوجد'}</td></tr>
+                    <tr><td style="padding: 8px; border-bottom: 1px solid var(--input-border);"><strong>السكن:</strong></td><td style="padding: 8px; border-bottom: 1px solid var(--input-border);">${person.address || 'غير محدد'}</td></tr>
+                    <tr><td style="padding: 8px; vertical-align: top;"><strong>ملاحظات:</strong></td><td style="padding: 8px;">${person.notes || 'لا يوجد'}</td></tr>
+                </table>
+            `;
+            this.elements.viewPersonnelModal.style.display = 'block';
+        },
+        
+        closeViewPersonnelModal() { this.elements.viewPersonnelModal.style.display = 'none'; },
+
+        filterPersonnel() {
+            const searchTerm = this.elements.searchInput.value.toLowerCase();
+            const activeCompany = document.querySelector('.sidebar-menu a.active')?.dataset.company || 'all';
+            this.renderPersonnelList(activeCompany, searchTerm);
+        },
+        
+        // --- Attendance ---
+        renderAttendanceTable() {
+            const date = this.elements.attendanceDateInput.value;
+            if (!date) {
+                this.elements.attendanceList.innerHTML = `<tr><td colspan="3" class="text-center">الرجاء اختيار تاريخ.</td></tr>`;
+                return;
+            }
+            const companyFilter = this.elements.attendanceCompanyFilter.value;
+            const dateKey = new Date(date).toISOString().slice(0, 10);
+            let filteredPersonnel = this.db.personnel;
+            if (companyFilter !== 'all') {
+                filteredPersonnel = filteredPersonnel.filter(p => p.company === companyFilter);
+            }
+            if (filteredPersonnel.length === 0) {
+                this.elements.attendanceList.innerHTML = `<tr><td colspan="3" class="text-center">لا يوجد أفراد في هذه السرية.</td></tr>`;
+                return;
+            }
+            const attendanceDataForDate = this.db.attendance[dateKey] || {};
+            const statuses = ['حاضر', 'غائب', 'مريض', 'راحة', 'مهمة', 'إجازة'];
+            let html = '';
+            filteredPersonnel.sort((a,b) => a.fullName.localeCompare(b.fullName, 'ar')).forEach(person => {
+                const personAttendance = attendanceDataForDate[person.id] || { status: 'حاضر', notes: '' };
+                const statusOptions = statuses.map(s => `<option value="${s}" ${personAttendance.status === s ? 'selected' : ''}>${s}</option>`).join('');
+                html += `
+                    <tr class="status-select-${personAttendance.status}">
+                        <td class="personnel-name">${person.rank || ''} / ${person.fullName}</td>
+                        <td>
+                            <select class="status-select form-control" data-person-id="${person.id}" onchange="this.parentElement.parentElement.className='status-select-' + this.value">${statusOptions}</select>
+                        </td>
+                        <td><input type="text" class="form-control" value="${personAttendance.notes || ''}" data-person-id="${person.id}" placeholder="أضف ملاحظة..."></td>
+                    </tr>
+                `;
+            });
+            this.elements.attendanceList.innerHTML = html;
+        },
+
+        saveAttendance() {
+            const date = this.elements.attendanceDateInput.value;
+            if (!date) {
+                this.showToast('الرجاء اختيار تاريخ أولاً.');
+                return;
+            }
+            const dateKey = new Date(date).toISOString().slice(0, 10);
+            this.db.attendance[dateKey] = this.db.attendance[dateKey] || {};
+            const statusSelects = this.elements.attendanceList.querySelectorAll('.status-select');
+            statusSelects.forEach(select => {
+                const personId = select.dataset.personId;
+                const noteInput = select.parentElement.nextElementSibling.querySelector('input');
+                this.db.attendance[dateKey][personId] = {
+                    status: select.value,
+                    notes: noteInput ? noteInput.value.trim() : ''
+                };
+            });
+            this.saveData();
+            this.updateDashboardStats();
+            this.showToast('تم حفظ سجل الحضور بنجاح.');
+        },
+
+        // --- Permits & Signatures ---
+        generatePermitTemplate() {
+            const permitType = document.getElementById('permit-type').value;
+            if (!permitType) {
+                this.clearPermit(); return;
+            }
+            const templates = {
+                raha: { title: "تصريح راحة", body: `يُصرح لـ <span class="fill-in" data-placeholder="rank"></span> / <span class="fill-in" data-placeholder="fullName"></span> صاحب الرقم العسكري <span class="fill-in" data-placeholder="militaryNumber"></span> من <span class="fill-in" data-placeholder="company"></span> بأخذ راحة لمدة <span contenteditable="true" class="fill-in">24 ساعة</span> اعتباراً من تاريخ اليوم.` },
+                mabeet: { title: "تصريح مبيت", body: `يُصرح لـ <span class="fill-in" data-placeholder="rank"></span> / <span class="fill-in" data-placeholder="fullName"></span> صاحب الرقم العسكري <span class="fill-in" data-placeholder="militaryNumber"></span> من <span class="fill-in" data-placeholder="company"></span> بالمبيت خارج الوحدة لمدة <span contenteditable="true" class="fill-in">ليلة واحدة</span>.` },
+                mohema: { title: "تصريح مهمة رسمية", body: `بناءً على الأوامر، يُصرح لـ <span class="fill-in" data-placeholder="rank"></span> / <span class="fill-in" data-placeholder="fullName"></span> بالتوجه إلى <span contenteditable="true" class="fill-in">موقع المهمة</span> لإنجاز مهمة رسمية، على أن يعود فور انتهائها.` },
+                khurooj: { title: "تصريح خروج", body: `يُصرح لـ <span class="fill-in" data-placeholder="rank"></span> / <span class="fill-in" data-placeholder="fullName"></span> بالخروج من الوحدة لغرض <span contenteditable="true" class="fill-in">شراء أغراض شخصية</span> لمدة <span contenteditable="true" class="fill-in">ساعتين</span>.` },
+                maradhi: { title: "إجازة مرضية", body: `بناءً على التقرير الطبي، يُمنح <span class="fill-in" data-placeholder="rank"></span> / <span class="fill-in" data-placeholder="fullName"></span> إجازة مرضية لمدة <span contenteditable="true" class="fill-in">... يوم</span> اعتباراً من تاريخ اليوم.` }
+            };
+
+            const template = templates[permitType];
+            const html = `
+                <div class="permit-container">
+                    <div class="permit-header">
+                        <h2>بسم الله الرحمن الرحيم</h2>
+                        <h3>${template.title}</h3>
+                    </div>
+                    <div class="permit-body">${template.body}<br><br>وعليه جرى التوقيع.</div>
+                    <div class="permit-footer">
+                        <div class="signature-block">
+                            <strong contenteditable="true">قائد السرية</strong>
+                            <div class="signature-pad-container"><canvas class="signature-canvas"></canvas></div>
+                            <button class="btn-clear-signature no-print">مسح التوقيع</button>
+                        </div>
+                        <div class="signature-block">
+                            <strong contenteditable="true">ضابط الأمن</strong>
+                            <div class="signature-pad-container"><canvas class="signature-canvas"></canvas></div>
+                            <button class="btn-clear-signature no-print">مسح التوقيع</button>
+                        </div>
+                    </div>
+                </div>`;
+            this.elements.permitDisplayArea.innerHTML = html;
+            this.initSignaturePads();
+            this.fillPermitWithPersonnelData();
+            this.elements.permitActions.classList.remove('hidden');
+        },
+
+        initSignaturePads() {
+            this.signaturePads = [];
+            const canvases = this.elements.permitDisplayArea.querySelectorAll('.signature-canvas');
+            canvases.forEach((canvas, index) => {
+                const signaturePad = new SignaturePad(canvas, { penColor: 'rgb(0, 0, 0)' });
+                this.signaturePads.push(signaturePad);
+                canvas.closest('.signature-block').querySelector('.btn-clear-signature').addEventListener('click', () => {
+                    signaturePad.clear();
+                });
+            });
+            // Adjust canvas size after creation
+            function resizeCanvas() {
+                canvases.forEach(canvas => {
+                    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                    canvas.width = canvas.offsetWidth * ratio;
+                    canvas.height = canvas.offsetHeight * ratio;
+                    canvas.getContext("2d").scale(ratio, ratio);
+                });
+            }
+            window.addEventListener("resize", resizeCanvas);
+            resizeCanvas();
+        },
+
+        fillPermitWithPersonnelData() {
+            const personId = document.getElementById('permit-personnel-select').value;
+            const person = this.db.personnel.find(p => p.id === personId);
+            const container = this.elements.permitDisplayArea;
+            if (!container.querySelector('.permit-container')) return;
+            const placeholders = {
+                rank: person?.rank || '........', fullName: person?.fullName || '........',
+                militaryNumber: person?.militaryNumber || '........', company: person?.company || '........'
+            };
+            container.querySelectorAll('.fill-in[data-placeholder]').forEach(span => {
+                const key = span.dataset.placeholder;
+                if (placeholders[key]) {
+                    span.textContent = placeholders[key];
+                    span.setAttribute('contenteditable', 'true');
+                }
+            });
+        },
+
+        clearPermit() {
+            this.elements.permitDisplayArea.innerHTML = `<p class="text-center">اختر نوع التصريح من الأعلى لعرض النموذج هنا.</p>`;
+            this.elements.permitActions.classList.add('hidden');
+            document.getElementById('permit-type').value = '';
+            document.getElementById('permit-personnel-select').value = '';
+        },
+        
+        // --- Reports ---
+        getTodaysStats() {
+            const todayKey = new Date().toISOString().slice(0, 10);
+            const attendanceToday = this.db.attendance[todayKey] || {};
+            const stats = {
+                total: this.db.personnel.length, present: 0, absent: 0, sick: 0,
+                rest: 0, mission: 0, leave: 0, other: 0,
+                lists: { absent: [], sick: [], rest: [], mission: [], leave: [] }
+            };
+            this.db.personnel.forEach(person => {
+                const personStatus = attendanceToday[person.id]?.status;
+                const personName = `${person.rank || 'فرد'} / ${person.fullName}`;
+                switch(personStatus) {
+                    case 'حاضر': stats.present++; break;
+                    case 'مريض': stats.sick++; stats.lists.sick.push(personName); break;
+                    case 'راحة': stats.rest++; stats.lists.rest.push(personName); break;
+                    case 'مهمة': stats.mission++; stats.lists.mission.push(personName); break;
+                    case 'إجازة': stats.leave++; stats.lists.leave.push(personName); break;
+                    case 'غائب': stats.absent++; stats.lists.absent.push(personName); break;
+                    default: stats.absent++; stats.lists.absent.push(personName); break; // Not recorded = absent
+                }
+            });
+            stats.other = stats.sick + stats.rest + stats.mission + stats.leave;
+            return stats;
+        },
+
+        updateDashboardStats() {
+            const stats = this.getTodaysStats();
+            document.getElementById('total-personnel-stat').textContent = stats.total;
+            document.getElementById('present-stat').textContent = stats.present;
+            document.getElementById('absent-stat').textContent = stats.absent;
+            document.getElementById('other-stat').textContent = stats.other;
+        },
+
+        generateDailyReport() {
+            const stats = this.getTodaysStats();
+            const today = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const generateList = (list) => list.length > 0 ? `<ul style="padding-right: 20px;">${list.map(name => `<li>${name}</li>`).join('')}</ul>` : 'لا يوجد.';
+            const html = `
+                <div class="card-header" style="text-align:center;">بسم الله الرحمن الرحيم<br>تقرير اليومية - ${today}</div>
+                <table style="width:100%; margin-top: 15px;">
+                    <tr><td style="font-weight:bold;">القوة العمومية:</td><td>${stats.total} فرد</td></tr>
+                    <tr><td style="font-weight:bold;">الموجود فعلياً:</td><td>${stats.present} فرد</td></tr>
+                    <tr style="color: #c0392b;"><td style="font-weight:bold;">الغياب:</td><td>${stats.absent} فرد</td></tr>
+                    <tr><td style="font-weight:bold;">الحالات الأخرى:</td><td>${stats.other} فرد</td></tr>
+                </table>
+                <hr style="margin: 15px 0;">
+                <h4>تفصيل الحالات:</h4>
+                <p><strong>الغياب (${stats.lists.absent.length}):</strong></p>${generateList(stats.lists.absent)}
+                <p><strong>المرضى (${stats.lists.sick.length}):</strong></p>${generateList(stats.lists.sick)}
+                <p><strong>الراحة (${stats.lists.rest.length}):</strong></p>${generateList(stats.lists.rest)}
+                <p><strong>المهمات (${stats.lists.mission.length}):</strong></p>${generateList(stats.lists.mission)}
+                <p><strong>الإجازات (${stats.lists.leave.length}):</strong></p>${generateList(stats.lists.leave)}
+            `;
+            this.elements.reportDisplayArea.innerHTML = html;
+            this.elements.reportActions.classList.remove('hidden');
+            this.navigateTo('reports'); // Navigate AFTER content is set
+        },
+        
+        generateDailyReportFromAttendance() {
+            this.saveAttendance();
+            this.generateDailyReport();
+        },
+
+        // --- Settings & Data Management ---
+        addCompany() {
+            const name = this.elements.companyNameInput.value.trim();
+            if (name && !this.db.companies.includes(name)) {
+                this.db.companies.push(name);
+                this.saveData(); this.renderAll();
+                this.elements.companyNameInput.value = '';
+                this.showToast(`تمت إضافة "${name}"`);
+            } else { this.showToast('الاسم موجود بالفعل أو غير صالح.'); }
+        },
+        deleteCompany(name) {
+            if (confirm(`هل أنت متأكد من حذف "${name}"؟ سيتم إلغاء تحديد هذه السرية من الأفراد المرتبطين بها.`)) {
+                this.db.companies = this.db.companies.filter(c => c !== name);
+                this.db.personnel.forEach(p => { if (p.company === name) p.company = ''; });
+                this.saveData(); this.renderAll();
+                this.showToast(`تم حذف "${name}"`);
+            }
+        },
+        toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            this.db.settings.darkMode = document.body.classList.contains('dark-mode');
+            this.saveData();
+        },
+        changeFontSize(size) {
+            document.body.style.setProperty('--font-size', `${size}px`);
+            this.db.settings.fontSize = size;
+            this.saveData();
+        },
+        applySettings() {
+            if (this.db.settings.darkMode) {
+                document.body.classList.add('dark-mode');
+                this.elements.darkModeToggle.checked = true;
+            }
+            if (this.db.settings.fontSize) {
+                document.body.style.setProperty('--font-size', `${this.db.settings.fontSize}px`);
+                this.elements.fontSizeSlider.value = this.db.settings.fontSize;
+            }
+        },
+        saveNotepad: (function() {
+            let timeout;
+            return function() {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    this.db.notepad = this.elements.notepadArea.value;
+                    this.saveData();
+                    this.showToast('تم حفظ المدونة تلقائياً.');
+                }, 1500);
+            };
+        })(),
+        copyNotepad() { navigator.clipboard.writeText(this.elements.notepadArea.value).then(() => this.showToast('تم نسخ محتوى المدونة.')); },
+        clearNotepad() { if (confirm('هل تريد مسح كل محتوى المدونة؟')) { this.elements.notepadArea.value = ''; this.db.notepad = ''; this.saveData(); } },
+        exportData() {
+            const dataStr = JSON.stringify(this.db, null, 2);
+            const blob = new Blob([dataStr], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `katiba-backup-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            this.showToast('تم بدء تنزيل النسخة الاحتياطية.');
+        },
+        importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedDb = JSON.parse(e.target.result);
+                    if (confirm('هل أنت متأكد من استيراد هذه البيانات؟ سيتم الكتابة فوق جميع بياناتك الحالية.')) {
+                        if (importedDb.personnel && importedDb.companies) {
+                            this.db = importedDb;
+                            this.saveData();
+                            this.showToast('تم الاستيراد بنجاح! سيتم تحديث الصفحة.');
+                            setTimeout(() => window.location.reload(), 1500);
+                        } else { throw new Error('الملف غير متوافق.'); }
+                    }
+                } catch (err) { this.showToast('خطأ: فشل استيراد الملف.'); console.error(err); }
+                finally { this.elements.importFileInput.value = ''; }
+            };
+            reader.readAsText(file);
+        },
+        confirmResetData() {
+            const conf = prompt('للتأكيد، اكتب "مسح الكل" في المربع أدناه. هذا الإجراء نهائي.');
+            if (conf === 'مسح الكل') {
+                localStorage.removeItem('katibaDB');
+                this.showToast('تم مسح البيانات. سيتم تحديث الصفحة.');
+                setTimeout(() => window.location.reload(), 1500);
+            } else if (conf !== null) { this.showToast('تم إلغاء عملية المسح.'); }
+        },
+        
+        async shareElementAsImage(elementId, fileName, shareText = 'مشاركة من نظام إدارة الكتيبة') {
+            const element = document.getElementById(elementId);
+            if(typeof html2canvas === 'undefined' || typeof SignaturePad === 'undefined') {
+                this.showToast('خطأ: لم يتم تحميل جميع المكتبات اللازمة.');
+                alert('تأكد من وجود ملفي html2canvas.min.js و signature_pad.min.js في نفس المجلد.');
+                return;
+            }
+            this.showToast('جاري إنشاء الصورة...');
+            const originalBg = element.style.backgroundColor;
+            element.style.backgroundColor = '#FFFFFF';
+            const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#FFFFFF',
+                onclone: (doc) => {
+                    const clonedElement = doc.getElementById(elementId);
+                    clonedElement.style.color = '#000000';
+                    clonedElement.querySelectorAll('*').forEach(el => { el.style.color = '#000000'; });
+                }
+            });
+            element.style.backgroundColor = originalBg;
+
+            // Smart Share: Use Web Share API if available, otherwise fallback to download
+            if (navigator.share && navigator.canShare) {
+                canvas.toBlob(async (blob) => {
+                    const file = new File([blob], `${fileName}.png`, { type: 'image/png' });
+                    try {
+                        await navigator.share({
+                            title: fileName,
+                            text: shareText,
+                            files: [file]
+                        });
+                        this.showToast('تمت المشاركة.');
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            this.showToast('خطأ في المشاركة: ' + err.message);
+                        }
+                    }
+                }, 'image/png');
+            } else {
+                // Fallback for browsers that don't support Web Share API
+                const image = canvas.toDataURL("image/png", 1.0);
+                const a = document.createElement('a');
+                a.href = image;
+                a.download = `${fileName}.png`;
+                a.click();
+                this.showToast('تم حفظ الصورة في التنزيلات.');
+            }
+        },
+
+        // --- Render Functions ---
+        renderAll() {
+            this.renderCompanyLists();
+            this.renderPersonnelList();
+            this.renderCompanyManager();
+            this.updateSelects();
+            this.updateDashboardStats();
+            this.elements.notepadArea.value = this.db.notepad || '';
+        },
+        renderPersonnelList(companyFilter = 'all', searchTerm = '') {
+            const container = this.elements.personnelListContainer;
+            let filteredPersonnel = this.db.personnel;
+            if (companyFilter !== 'all') {
+                filteredPersonnel = filteredPersonnel.filter(p => p.company === companyFilter);
+                document.getElementById('personnel-list-title').textContent = `أفراد: ${companyFilter}`;
+            } else {
+                 document.getElementById('personnel-list-title').textContent = `كل أفراد الكتيبة`;
+            }
+            if (searchTerm) {
+                searchTerm = searchTerm.toLowerCase();
+                filteredPersonnel = filteredPersonnel.filter(p => p.fullName.toLowerCase().includes(searchTerm) || p.militaryNumber.includes(searchTerm));
+            }
+            if (filteredPersonnel.length === 0) {
+                container.innerHTML = '<p class="text-center card">لا يوجد أفراد لعرضهم يطابقون معايير البحث.</p>';
+                return;
+            }
+            const defaultImg = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzgwODA4MCI+PHBhdGggZD0iTTEyIDEyYyAyLjc2IDAgNS0yLjI0IDUtNXMyLjI0LTUgNS01LTUgMi4yNC01IDUgMi4yNCA1IDUgNXptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyYzAgMS4xLjkgMiAyIDJoMTRjMS4xIDAgMi0uOSAyLTJ2LTJjMC0yLjY2LTUuMzMtNC04LTR6Ii8+PC9zdmc+';
+            container.innerHTML = filteredPersonnel.sort((a,b) => a.fullName.localeCompare(b.fullName, 'ar')).map(person => `
+                <div class="personnel-card">
+                    <img src="${person.image || defaultImg}" class="personnel-img" alt="صورة الفرد" loading="lazy">
+                    <div class="personnel-info">
+                        <h4>${person.rank || ''} / ${person.fullName}</h4>
+                        <p>ر.ع: ${person.militaryNumber} | السرية: ${person.company || 'غير محدد'}</p>
+                    </div>
+                    <div class="personnel-card-actions">
+                        <button class="btn btn-secondary" onclick="app.viewPersonnel('${person.id}')">عرض</button>
+                        <button class="btn" onclick="app.showPersonnelModal('${person.id}')">تعديل</button>
+                        <button class="btn btn-danger" onclick="app.deletePersonnel('${person.id}')">حذف</button>
+                    </div>
+                </div>
+            `).join('');
+        },
+        renderCompanyLists() {
+            const submenu = this.elements.personnelSubmenu;
+            submenu.querySelectorAll('li:not(:first-child)').forEach(link => link.remove());
+            this.db.companies.sort((a,b) => a.localeCompare(b, 'ar')).forEach(company => {
+                const li = document.createElement('li');
+                li.innerHTML = `<a href="#all-personnel" class="nav-link" data-company="${company}">${company}</a>`;
+                submenu.appendChild(li);
+            });
+            // Re-attach event listeners after re-rendering
+            document.querySelectorAll('.sidebar-menu a').forEach(link => {
+                link.removeEventListener('click', this.handleNavigation); // Avoid duplicates
+                link.addEventListener('click', (e) => this.handleNavigation(e));
+            });
+        },
+        renderCompanyManager() {
+            const list = this.elements.companyManagementList;
+            if (this.db.companies.length === 0) { list.innerHTML = '<li>لا توجد سرايا حالياً.</li>'; return; }
+            list.innerHTML = this.db.companies.sort((a,b) => a.localeCompare(b, 'ar')).map(name => `
+                <li style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--input-border);">
+                    ${name}
+                    <button class="btn btn-danger" style="padding: 5px 10px;" onclick="app.deleteCompany('${name}')">حذف</button>
+                </li>
+            `).join('');
+        },
+        updateSelects() {
+            const companyOptions = this.db.companies.sort((a,b) => a.localeCompare(b, 'ar')).map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('company').innerHTML = `<option value="">-- اختر السرية --</option>` + companyOptions;
+            this.elements.attendanceCompanyFilter.innerHTML = `<option value="all">كل الكتيبة</option>` + companyOptions;
+            const personnelOptions = this.db.personnel
+                .sort((a,b) => a.fullName.localeCompare(b.fullName, 'ar'))
+                .map(p => `<option value="${p.id}">${p.rank || 'فرد'} / ${p.fullName} (${p.militaryNumber})</option>`).join('');
+            document.getElementById('permit-personnel-select').innerHTML = `<option value="">-- اختر فرد --</option>` + personnelOptions;
+        },
+    };
+
+    app.init();
+    </script>
+</body>
+</html>
